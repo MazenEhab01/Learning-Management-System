@@ -1,5 +1,6 @@
 package org.software.lms.controller;
 
+import org.software.lms.dto.GradeSubmissionRequest;
 import org.software.lms.model.Assignment;
 import org.software.lms.model.Submission;
 import org.software.lms.service.AssignmentService;
@@ -33,44 +34,48 @@ public class AssignmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdAssignment);
     }
 
+    // Submit Assignment
     @PostMapping("/{assignmentId}/submit")
     public ResponseEntity<Submission> submitAssignment(
             @PathVariable Long assignmentId,
-            @RequestParam String filePathOrUrl,
+            @RequestParam("file") MultipartFile file,
             @RequestParam Long studentId) {
 
-        try {
-            // Validate the input (e.g., check if the path/URL is valid)
-            if (filePathOrUrl == null || filePathOrUrl.isEmpty()) {
-                return ResponseEntity.badRequest().body(null);
-            }
-
-            // Create a submission object
-            Submission submission = new Submission();
-            submission.setAssignmentId(assignmentId);
-            submission.setStudentId(studentId);
-            submission.setFilePath(filePathOrUrl); // Save the path or URL directly
-
-            // Save the submission
-            Submission submittedAssignment = assignmentService.submitAssignment(submission);
-            return ResponseEntity.status(HttpStatus.CREATED).body(submittedAssignment);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+        boolean studentExists = assignmentService.checkIfStudentExists(studentId);
+        if (!studentExists) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(null); // or return a meaningful error message
         }
+        if (!assignmentService.checkIfAssignmentExists(assignmentId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null); // Assignment not found
+        }
+
+        // Store file and create submission object
+        String filePath = saveFile(file);  // Implement the file saving logic
+        Submission submission = new Submission();
+        submission.setAssignmentId(assignmentId);
+        submission.setStudentId(studentId);
+        submission.setFilePath(filePath);
+
+        Submission submittedAssignment = assignmentService.submitAssignment(submission);
+        return ResponseEntity.status(HttpStatus.CREATED).body(submittedAssignment);
+    }
+
+    public String saveFile(MultipartFile file) {
+        String fileName = file.getOriginalFilename();
+        Path filePath = Paths.get("uploads", fileName);
+
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("File upload failed", e);
+        }
+        return filePath.toString();
     }
 
 
-    private String saveFile(MultipartFile file) throws IOException {
-        Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-        Files.createDirectories(uploadPath);
 
-        String originalFilename = file.getOriginalFilename();
-        String filename = System.currentTimeMillis() + "_" + originalFilename;
-        Path targetPath = uploadPath.resolve(filename);
-
-        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-        return targetPath.toString();
-    }
 
     @GetMapping("/{assignmentId}/submissions")
     public ResponseEntity<List<Submission>> getSubmissionsForAssignment(@PathVariable Long assignmentId) {
@@ -81,10 +86,13 @@ public class AssignmentController {
     @PostMapping("/{submissionId}/grade")
     public ResponseEntity<Submission> gradeAssignment(
             @PathVariable Long submissionId,
-            @RequestParam Double grade,
-            @RequestParam String feedback) {
+            @RequestBody GradeSubmissionRequest request) {
 
-        Submission gradedSubmission = assignmentService.gradeAssignment(submissionId, grade, feedback);
+        Submission gradedSubmission = assignmentService.gradeAssignment(
+                submissionId,
+                request.getGrade(),
+                request.getFeedback()
+        );
         return ResponseEntity.ok(gradedSubmission);
     }
 }
