@@ -62,11 +62,20 @@ public class AssignmentService {
         return assignmentRepository.existsById(assignmentId);
     }
 
-    // Check if the assignment exists
-//    public boolean checkIfAssignmentExists(Long assignmentId) {
-//        boolean assignment= assignmentRepository.existsById(assignmentId);
-////        .orElseThrow(() -> new ResourceNotFoundException("Assignment not found with id: " + assignmentId));
-//            if (assignment)return true;
-//            return false;
-//    }
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('INSTRUCTOR')")
+    public void deleteAssignment(Long assignmentId) {
+        // Check if the assignment exists
+        if (!assignmentRepository.existsById(assignmentId)) {
+            throw new ResourceNotFoundException("Assignment not found with id: " + assignmentId);
+        }
+
+        // Delete the assignment
+        assignmentRepository.deleteById(assignmentId);
+    }
+
+    public Submission getSubmissionById(Long submissionId) {
+        return submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission not found with id: " + submissionId));
+    }
+
 }

@@ -3,31 +3,33 @@ package org.software.lms.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
 @Entity
-@Table(name = "submissions") // Specify table name
-
+@Table(name = "submissions")
 public class Submission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "assignment_id", nullable = false) // Maps to assignmentId column in the database
+    @Column(name = "assignment_id", nullable = false)
     private Long assignmentId;
 
-    @Column(name = "student_id", nullable = false) // Maps to studentId column in the database
+    @Column(name = "student_id", nullable = false)
     private Long studentId;
 
-    @Column(name = "file_path", nullable = false) // Path to the uploaded file
+    @Column(name = "file_path", nullable = false)
     private String filePath;
 
-    @Column(name = "grade") // Grade for the submission
+    @Column(name = "grade")
     private Double grade;
 
-    @Column(name = "feedback") // Feedback from the instructor
+    @Column(name = "feedback")
     private String feedback;
 
+    @Transient // This field will not be persisted in the database
+    private byte[] fileContent;
+
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -74,5 +76,13 @@ public class Submission {
 
     public void setFeedback(String feedback) {
         this.feedback = feedback;
+    }
+
+    public byte[] getFileContent() {
+        return fileContent;
+    }
+
+    public void setFileContent(byte[] fileContent) {
+        this.fileContent = fileContent;
     }
 }

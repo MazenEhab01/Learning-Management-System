@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Base64;
 import java.util.List;
 
 @RestController
@@ -80,8 +81,54 @@ public class AssignmentController {
     @GetMapping("/{assignmentId}/submissions")
     public ResponseEntity<List<Submission>> getSubmissionsForAssignment(@PathVariable Long assignmentId) {
         List<Submission> submissions = assignmentService.getSubmissionsByAssignment(assignmentId);
+
+        // Populate fileContent for each submission
+        submissions.forEach(submission -> {
+            String filePath = submission.getFilePath();
+            try {
+                Path path = Paths.get(filePath);
+                byte[] fileBytes = Files.readAllBytes(path);
+                // Convert binary content to Base64 string
+                String base64Content = Base64.getEncoder().encodeToString(fileBytes);
+                submission.setFileContent(base64Content.getBytes()); // Store as bytes or update your model to use String
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read file: " + filePath, e);
+            }
+        });
+
         return ResponseEntity.ok(submissions);
     }
+
+
+    @GetMapping("/{assignmentId}/submissions/{submissionId}/download")
+    public ResponseEntity<byte[]> downloadSubmissionFile(@PathVariable Long assignmentId, @PathVariable Long submissionId) {
+        Submission submission = assignmentService.getSubmissionById(submissionId);
+
+        // Check if the submission belongs to the assignment
+        if (!submission.getAssignmentId().equals(assignmentId)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(null); // or throw a custom exception
+        }
+
+        String filePath = submission.getFilePath();
+        try {
+            Path path = Paths.get(filePath);
+            byte[] fileBytes = Files.readAllBytes(path);
+
+            // Determine the file name
+            String fileName = path.getFileName().toString();
+
+            // Set response headers for file download
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+                    .contentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM)
+                    .body(fileBytes);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read file: " + filePath, e);
+        }
+    }
+
+
 
     @PostMapping("/{submissionId}/grade")
     public ResponseEntity<Submission> gradeAssignment(
@@ -95,4 +142,18 @@ public class AssignmentController {
         );
         return ResponseEntity.ok(gradedSubmission);
     }
+    @DeleteMapping("/{assignmentId}")
+    public ResponseEntity<String> deleteAssignment(@PathVariable Long assignmentId) {
+        // Check if the assignment exists
+        if (!assignmentService.checkIfAssignmentExists(assignmentId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Assignment not found with id: " + assignmentId);
+        }
+
+        // Call the service to delete the assignment
+        assignmentService.deleteAssignment(assignmentId);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body("Assignment with id " + assignmentId + " has been deleted successfully.");
+    }
+
 }
