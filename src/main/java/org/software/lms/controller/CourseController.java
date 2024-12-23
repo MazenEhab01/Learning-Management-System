@@ -1,6 +1,7 @@
 package org.software.lms.controller;
 
 import org.software.lms.model.Course;
+import org.software.lms.model.User;
 import org.software.lms.service.CourseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -58,6 +59,10 @@ public class CourseController {
     @GetMapping("/search/by-created-date/{createdAt}")
     public List<Course> findCoursesByCreatedAtAfter(@PathVariable java.util.Date createdAt) {
         return courseService.findCoursesByCreatedAtAfter(createdAt);
+    }
+    @GetMapping("/{id}/studentEnrolled")
+    public List<User> findStudentEnrolledInCourse(@PathVariable Long id) {
+        return courseService.findStudentEnrolledInCourse(id);
     }
     @PostMapping("/{id}/instructors")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
