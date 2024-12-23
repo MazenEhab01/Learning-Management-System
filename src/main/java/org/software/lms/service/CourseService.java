@@ -30,6 +30,9 @@ public class CourseService {
     }
 
     public Course createCourse(Course course) {
+       if(courseRepository.findById(course.getId()).isPresent()){
+           throw new IllegalArgumentException("Course with the given title already exists!");
+       };
         return courseRepository.save(course);
     }
 
@@ -144,5 +147,10 @@ public class CourseService {
 
         course.getLessons().remove(lesson);
         courseRepository.save(course);
+    }
+
+    public List<User> findStudentEnrolledInCourse(Long id) {
+        Course course = courseRepository.findById(id).orElseThrow(() -> new RuntimeException("Course not found"));
+        return course.getStudentEnrolledCourses();
     }
 }
