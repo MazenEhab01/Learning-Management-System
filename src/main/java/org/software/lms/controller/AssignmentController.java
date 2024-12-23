@@ -16,6 +16,7 @@ public class AssignmentController {
 
     @Autowired
     private AssignmentService assignmentService;
+    private NotificationController notifControl;
 
     @PostMapping
     public ResponseEntity<Assignment> createAssignment(
@@ -80,7 +81,12 @@ public class AssignmentController {
             @PathVariable Long submissionId,
             @RequestParam Double grade,
             @RequestParam String feedback) {
-        return ResponseEntity.ok(assignmentService.gradeSubmission(courseId, submissionId, grade, feedback));
+            Submission submission = assignmentService.gradeSubmission(courseId, submissionId, grade, feedback); 
+            Long StudId = submission.getStudentId();
+            String title = submission.getAssignment().getTitle() + " graded.";
+            String message = "Your grade is " + grade; 
+            notifControl.createNotification(StudId, courseId, title, message);
+            return ResponseEntity.ok(submission);
     }
 
     @GetMapping("/{assignmentId}/submissions")

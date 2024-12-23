@@ -1,8 +1,7 @@
 package org.software.lms.controller;
 
-import org.software.lms.model.Course;
-import org.software.lms.model.User;
-import org.software.lms.service.CourseService;
+import org.software.lms.model.*;
+import org.software.lms.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,8 +13,10 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private final NotificationController notifControl;
 
-    public CourseController(CourseService courseService) {
+    public CourseController(CourseService courseService, NotificationController notifControl) {
+        this.notifControl = notifControl;
         this.courseService = courseService;
     }
 
@@ -38,13 +39,28 @@ public class CourseController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
-    public Course updateCourse(@PathVariable Long id, @RequestBody Course updatedCourse) {
-        return courseService.updateCourse(id, updatedCourse);
+    public Course updateCourse(@PathVariable Long CourseId, @RequestBody Course updatedCourse) {
+        Course course = courseService.updateCourse(CourseId, updatedCourse);
+        // List<User> enrolledStudents = findAllStudentsEnrolledInCourse();
+        // for (User stud : enrolledStudents) {
+        //     Long StudId = stud.getId();
+        //     String title = "New Instructor";
+        //     String message = "Instructor x has been added to this course";
+        //     notifControl.createNotification(StudId, CourseId, title, message);
+        // }
+        return course;
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public void deleteCourse(@PathVariable Long id) {
+        // List<User> enrolledStudents = findAllStudentsEnrolledInCourse(id);
+        // for (User stud : enrolledStudents) {
+        //     Long StudId = stud.getId();
+        //     String title = "New Instructor";
+        //     String message = "Instructor x has been added to this course";
+        //     notifControl.createNotification(StudId, id, title, message);
+        // }
         courseService.deleteCourse(id);
     }
 
@@ -66,44 +82,89 @@ public class CourseController {
     }
     @PostMapping("/{id}/instructors")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
-    public ResponseEntity<Course> addInstructorsToCourse(@PathVariable Long id, @RequestBody List<Long> instructorIds) {
-        return ResponseEntity.ok(courseService.addInstructorsToCourse(id, instructorIds));
+    public ResponseEntity<Course> addInstructorsToCourse(@PathVariable Long CourseId, @RequestBody List<Long> instructorIds) {
+        Course course = courseService.addInstructorsToCourse(CourseId, instructorIds);
+        // List<User> enrolledStudents = findAllStudentsEnrolledInCourse();
+        // for (User stud : enrolledStudents) {
+        //     Long StudId = stud.getId();
+        //     String title = "New Instructor";
+        //     String message = "Instructor x has been added to this course";
+        //     notifControl.createNotification(StudId, CourseId, title, message);
+        // }
+        return ResponseEntity.ok(course);
     }
 
 
     @PostMapping("/{id}/students")
     public ResponseEntity<Course> addStudentsToCourse(@PathVariable Long id, @RequestBody List<Long> studentIds) {
-        return ResponseEntity.ok(courseService.addStudentsToCourse(id, studentIds));
+        Course course = courseService.addStudentsToCourse(id, studentIds);
+        Long courseId = course.getId();
+        String message = "Enrollment successful";
+        for (Long studentId: studentIds) {
+            notifControl.createNotification(studentId, courseId, "Enrollment Confirmation", message);
+        }
+        return ResponseEntity.ok(course);
     }
 
 
     @PostMapping("/{id}/lessons")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Course> addLessonsToCourse(@PathVariable Long id, @RequestBody List<Long> lessonIds) {
-        return ResponseEntity.ok(courseService.addLessonsToCourse(id, lessonIds));
+        Course course = courseService.addLessonsToCourse(id, lessonIds);
+        // List<User> enrolledStudents = findAllStudentsEnrolledInCourse();
+        // for (User stud : enrolledStudents) {
+        //     Long StudId = stud.getId();
+        //     String title = "New Instructor";
+        //     String message = "Instructor x has been added to this course";
+        //     notifControl.createNotification(StudId, CourseId, title, message);
+        // }
+        return ResponseEntity.ok(course);
     }
     @PutMapping("/{id}/lessons")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
-    public ResponseEntity<Course> updateLessonsOfCourse(@PathVariable Long id, @RequestBody List<Long> lessonIds) {
-        return ResponseEntity.ok(courseService.updateLessonsOfCourse(id, lessonIds));
+    public ResponseEntity<Course> updateLessonsOfCourse(@PathVariable Long CourseId, @RequestBody List<Long> lessonIds) {
+        Course course = courseService.updateLessonsOfCourse(CourseId, lessonIds);
+        // List<User> enrolledStudents = findAllStudentsEnrolledInCourse();
+        // for (User stud : enrolledStudents) {
+        //     Long StudId = stud.getId();
+        //     String title = "New Instructor";
+        //     String message = "Instructor x has been added to this course";
+        //     notifControl.createNotification(StudId, CourseId, title, message);
+        // }
+        return ResponseEntity.ok(course);
     }
     @DeleteMapping("/{id}/instructors/{instructorId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Void> deleteInstructorFromCourse(@PathVariable Long id, @PathVariable Long instructorId) {
         courseService.deleteInstructorFromCourse(id, instructorId);
+        // List<User> enrolledStudents = findAllStudentsEnrolledInCourse();
+        // for (User stud : enrolledStudents) {
+        //     Long StudId = stud.getId();
+        //     String title = "New Instructor";
+        //     String message = "Instructor x has been added to this course";
+        //     notifControl.createNotification(StudId, CourseId, title, message);
+        // }
         return ResponseEntity.noContent().build();
     }
     @DeleteMapping("/{id}/students/{studentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Void> deleteStudentFromCourse(@PathVariable Long id, @PathVariable Long studentId) {
         courseService.deleteStudentFromCourse(id, studentId);
+        notifControl.createNotification(studentId, id, "Removal", "You have been removed");
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}/lessons/{lessonId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
-    public ResponseEntity<Void> deleteLessonFromCourse(@PathVariable Long id, @PathVariable Long lessonId) {
-        courseService.deleteLessonFromCourse(id, lessonId);
+    public ResponseEntity<Void> deleteLessonFromCourse(@PathVariable Long CourseId, @PathVariable Long lessonId) {
+        courseService.deleteLessonFromCourse(CourseId, lessonId);
+        // List<User> enrolledStudents = findAllStudentsEnrolledInCourse();
+        // for (User stud : enrolledStudents) {
+        //     Long StudId = stud.getId();
+        //     String title = "New Instructor";
+        //     String message = "Instructor x has been added to this course";
+        //     notifControl.createNotification(CourseId, CourseId, title, message);
+        // }
         return ResponseEntity.noContent().build();
     }
 }
