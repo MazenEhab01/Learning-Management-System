@@ -1,6 +1,6 @@
 package org.software.lms.controller;
 
-import org.software.lms.model.Notification;
+import org.software.lms.model.*;
 import org.software.lms.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,27 +16,29 @@ public class NotificationController {
 
     @PostMapping
     public ResponseEntity<Notification> createNotification(
-        @RequestParam String title,
-        @RequestParam String message,
-        @RequestParam Long userId) {
-        Notification notification = notificationService.createNotification(title, message, userId);
+            @RequestParam Long userId,
+            @RequestParam Long courseId,
+            @RequestParam String title,
+            @RequestParam String message) {
+        Notification notification = notificationService.createNotification(userId, courseId, title, message);
         return ResponseEntity.ok(notification);
     }
 
-    // Endpoint for all notifications
-     @GetMapping("/{userId}/all")
-     public ResponseEntity<List<Notification>> getAllNotifications(@RequestParam Long userId) {
-         List<Notification> notifications = notificationService.getAllNotifications(userId);
-         return ResponseEntity.ok(notifications);
-     }
- 
-    // Endpoint for unread notifications
-    @GetMapping("/{userId}/unread")
-    public ResponseEntity<List<Notification>> getUnreadNotifications(@PathVariable Long userId) {
-        List<Notification> notifications = notificationService.getUnreadNotifications(userId);
+    // Get all notifications for a user
+    @GetMapping("/{userId}/all")
+    public ResponseEntity<List<Notification>> findByUserId(@PathVariable Long userId) {
+        List<Notification> notifications = notificationService.findByUserId(userId);
         return ResponseEntity.ok(notifications);
     }
 
+    // Get unread notifications for a user
+    @GetMapping("/{userId}/unread")
+    public ResponseEntity<List<Notification>> findByUserIdAndIsReadFalse(@PathVariable Long userId) {
+        List<Notification> notifications = notificationService.findByUserIdAndIsReadFalse(userId);
+        return ResponseEntity.ok(notifications);
+    }
+
+    // Mark a notification as read
     @PutMapping("/{notificationId}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {
         notificationService.markAsRead(notificationId);

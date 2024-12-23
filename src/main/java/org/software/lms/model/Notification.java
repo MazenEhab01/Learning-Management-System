@@ -1,6 +1,8 @@
 package org.software.lms.model;
 
 import jakarta.persistence.*;
+import lombok.*;
+import java.util.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -15,9 +17,8 @@ public class Notification {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id", nullable = true)
     private Course course;
-
 
     @Column(nullable = false)
     private String title;
@@ -26,73 +27,28 @@ public class Notification {
     private String message;
 
     @Column(nullable = false)
-    private Long userId; // User receiving the notification
+    private Boolean isRead;
 
     @Column(nullable = false)
-    private Boolean isRead = false;
+    private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    public Notification() {}
 
-    // Getters and Setters
-
-    public Notification() {
-    }
-
-    public Notification(Long id, String title, String message, Long userId, Boolean isRead, LocalDateTime createdAt) {
-        this.id = id;
+    public Notification(User user, Course course, String title, String message) {
+        this.user = user;
+        this.course = course;
         this.title = title;
         this.message = message;
-        this.userId = userId;
-        this.isRead = isRead;
-        this.createdAt = createdAt;
+        isRead = false;
+        createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public Boolean getIsRead() {
-        return isRead;
-    }
-
-    public void setIsRead(Boolean isRead) {
-        this.isRead = isRead;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Long getId() { return id; }
+    public User getUser() { return user; }
+    public Course getCourse() { return course; }
+    public String getTitle() { return title; }
+    public String getMessage() { return message; }
+    public Boolean IsRead() { return isRead; }
+    public void markAsRead() { isRead = true; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }
