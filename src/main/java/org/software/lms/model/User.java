@@ -12,6 +12,7 @@ import java.util.Set;
 
 @Entity
 @Table(name = "users")
+@Inheritance(strategy = InheritanceType.JOINED)
 @NoArgsConstructor
 @AllArgsConstructor
 
@@ -108,6 +109,14 @@ public class User {
 
     public void setQuizAttempts(List<QuizAttempt> quizAttempts) {
         this.quizAttempts = quizAttempts;
+    }
+
+    public Set<Course> getCoursesTeaching() {
+        return coursesTeaching;
+    }
+
+    public void setCoursesTeaching(Set<Course> coursesTeaching) {
+        this.coursesTeaching = coursesTeaching;
     }
 }
 

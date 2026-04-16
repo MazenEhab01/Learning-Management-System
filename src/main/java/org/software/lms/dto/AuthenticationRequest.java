@@ -10,8 +10,10 @@ public class AuthenticationRequest {
     private String password;
     private Role role;
 
-    private String firstName; // Add these fields
+    private String firstName;
     private String lastName;
+    private String studentNumber;
+    private String employeeId;
     public void setEmail(String email) {
         this.email = email;
     }
@@ -51,6 +53,22 @@ public class AuthenticationRequest {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getStudentNumber() {
+        return studentNumber;
+    }
+
+    public void setStudentNumber(String studentNumber) {
+        this.studentNumber = studentNumber;
+    }
+
+    public String getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
     }
 
     public AuthenticationRequest(String email, String password, Role role) {

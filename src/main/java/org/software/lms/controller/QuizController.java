@@ -55,23 +55,15 @@ public class QuizController {
     public ResponseEntity<String> submitQuiz(
             @PathVariable Long courseId,
             @PathVariable Long quizId,
-            @Valid @RequestBody List<QuestionAnswerDTO> answers,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @Valid @RequestBody List<QuestionAnswerDTO> answers) {
 
-        // Get the user's email from the authenticated UserDetails
-        String userEmail = userDetails.getUsername();
-
-        // Find the user by email
-        UserDto user = userService.getUserByEmail(userEmail);
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found");
-        }
-
-        String feedback = quizService.submitQuizAttempt(courseId, quizId, answers, user.getId());
+        // Service now handles studentId retrieval from SecurityContext
+        String feedback = quizService.submitQuizAttempt(courseId, quizId, answers, null);
         return ResponseEntity.ok(feedback);
     }
 
     @GetMapping("/{quizId}")
+    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<QuizDTO> getQuizById(
             @PathVariable Long courseId,
             @PathVariable Long quizId) {
@@ -80,6 +72,7 @@ public class QuizController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<List<QuizDTO>> getQuizzesByCourse(@PathVariable Long courseId) {
         List<QuizDTO> quizzes = quizService.getQuizzesByCourse(courseId);
         return ResponseEntity.ok(quizzes);

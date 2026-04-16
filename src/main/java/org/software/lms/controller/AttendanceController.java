@@ -1,10 +1,12 @@
 package org.software.lms.controller;
 
-import org.software.lms.model.LessonAttendance;
+import org.software.lms.model.User;
 import org.software.lms.service.AttendanceService;
+import org.software.lms.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,10 +15,12 @@ import java.util.List;
 @RequestMapping("/api/courses/{courseId}/lessons/{lessonId}/attendance")
 public class AttendanceController {
     private final AttendanceService attendanceService;
+    private final UserService userService;
 
     @Autowired
-    public AttendanceController(AttendanceService attendanceService) {
+    public AttendanceController(AttendanceService attendanceService, UserService userService) {
         this.attendanceService = attendanceService;
+        this.userService = userService;
     }
 
     @PostMapping("/generate-otp")
@@ -29,11 +33,14 @@ public class AttendanceController {
     }
 
     @PostMapping("/mark")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<LessonAttendance> markAttendance(
             @PathVariable Long courseId,
             @PathVariable Long lessonId,
-            @RequestParam Long studentId,
             @RequestParam String otp) {
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long studentId = userService.getUserByEmail(userEmail).getId();
+
         LessonAttendance attendance = attendanceService.markAttendance(courseId, lessonId, studentId, otp);
         return ResponseEntity.ok(attendance);
     }
@@ -48,20 +55,35 @@ public class AttendanceController {
     }
 
     @GetMapping("/students/{studentId}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT', 'ADMIN')")
     public ResponseEntity<List<LessonAttendance>> getStudentAttendance(
             @PathVariable Long courseId,
             @PathVariable Long lessonId,
             @PathVariable Long studentId) {
+        // Security: If Student, they can only view their own attendance
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        var user = userService.getUserByEmail(userEmail);
+        if (user.getRole().name().equals("STUDENT") && !user.getId().equals(studentId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot view other students' attendance");
+        }
+
         List<LessonAttendance> attendanceList = attendanceService.getStudentAttendance(courseId, lessonId, studentId);
         return ResponseEntity.ok(attendanceList);
     }
 
     @GetMapping("/students/{studentId}/exists")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'STUDENT', 'ADMIN')")
     public ResponseEntity<Boolean> hasAttendance(
             @PathVariable Long courseId,
             @PathVariable Long lessonId,
             @PathVariable Long studentId) {
+        // Security check for students
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        var user = userService.getUserByEmail(userEmail);
+        if (user.getRole().name().equals("STUDENT") && !user.getId().equals(studentId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied");
+        }
+
         boolean hasAttendance = attendanceService.hasAttendance(courseId, lessonId, studentId);
         return ResponseEntity.ok(hasAttendance);
     }

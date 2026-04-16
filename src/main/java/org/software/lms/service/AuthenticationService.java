@@ -2,9 +2,7 @@ package org.software.lms.service;
 
 import org.software.lms.dto.AuthenticationRequest;
 import org.software.lms.dto.AuthenticationResponse;
-import org.software.lms.model.Role;
-import org.software.lms.security.JwtUtil;
-import org.software.lms.model.User;
+import org.software.lms.model.*;
 import org.software.lms.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -36,16 +34,31 @@ public class AuthenticationService {
             throw new RuntimeException("Email already in use");
         }
 
-        // Create new user
-        User user = new User();
+        // Create new user based on role
+        User user;
+        Role role = request.getRole() != null ? request.getRole() : Role.STUDENT;
+
+        if (role == Role.STUDENT) {
+            Student student = new Student();
+            student.setStudentNumber(request.getStudentNumber());
+            user = student;
+        } else if (role == Role.INSTRUCTOR) {
+            Instructor instructor = new Instructor();
+            instructor.setEmployeeId(request.getEmployeeId());
+            user = instructor;
+        } else if (role == Role.ADMIN) {
+            user = new Admin();
+        } else {
+            user = new User();
+        }
+
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         // Set default values if not provided
         user.setFirstName(request.getFirstName() != null ? request.getFirstName() : "User");
         user.setLastName(request.getLastName() != null ? request.getLastName() : "");
-
-        user.setRole(request.getRole() != null ? request.getRole() : Role.STUDENT);
+        user.setRole(role);
 
         User savedUser = userRepository.save(user);
 

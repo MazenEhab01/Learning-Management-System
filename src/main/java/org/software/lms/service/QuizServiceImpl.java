@@ -1,21 +1,16 @@
-package org.software.lms.service;
-
-import jakarta.transaction.Transactional;
-import org.software.lms.dto.*;
-import org.software.lms.exception.ResourceNotFoundException;
 import org.software.lms.model.*;
 import org.software.lms.repository.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +22,10 @@ public class QuizServiceImpl implements QuizService {
     private final CourseRepository courseRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final UserRepository userRepository;
+
+    // To track start times without persisting until submission (if preferred)
+    // Or we could persist a "started" attempt.
+    private final Map<String, LocalDateTime> quizStartTimes = new ConcurrentHashMap<>();
 
     @Autowired
     public QuizServiceImpl(QuizRepository quizRepository,
@@ -83,6 +82,11 @@ public class QuizServiceImpl implements QuizService {
         }
 
         Collections.shuffle(questionBank);
+
+        // Track start time for this student and quiz
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        quizStartTimes.put(userEmail + "_" + quizId, LocalDateTime.now());
+
         return questionBank.stream()
                 .limit(quiz.getNumberOfQuestions())
                 .map(question -> {
@@ -100,19 +104,32 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public String submitQuizAttempt(Long courseId, Long quizId,
-                                    List<QuestionAnswerDTO> answers, Long studentId) {
+                                    List<QuestionAnswerDTO> answers, Long studentIdParam) {
+        // Security: Retrieve studentId from SecurityContext to prevent impersonation
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User student = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with email: " + userEmail));
+        Long studentId = student.getId();
+
         // Validate quiz exists in the course
         Quiz quiz = quizRepository.findByCourseIdAndId(courseId, quizId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Quiz not found with id: " + quizId + " in course: " + courseId));
 
-        // Validate student exists
-        User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found with id: " + studentId));
+        // Validation: Ensure student is enrolled in the course
+        Course course = quiz.getCourse();
+        if (course.getStudentEnrolledCourses().stream().noneMatch(s -> s.getId().equals(studentId))) {
+            throw new IllegalArgumentException("Student is not enrolled in this course");
+        }
 
         // Calculate score
         int score = 0;
         LocalDateTime submissionTime = LocalDateTime.now();
+
+        // Time Tracking: Retrieve actual start time
+        LocalDateTime startTime = quizStartTimes.getOrDefault(userEmail + "_" + quizId,
+                submissionTime.minus(quiz.getDuration(), ChronoUnit.MINUTES));
+        quizStartTimes.remove(userEmail + "_" + quizId); // Clean up
 
         // Process each answer
         for (QuestionAnswerDTO answer : answers) {
@@ -138,9 +155,9 @@ public class QuizServiceImpl implements QuizService {
         attempt.setQuiz(quiz);
         attempt.setStudent(student);
         attempt.setScore(score);
-        attempt.setStartTime(submissionTime.minus(quiz.getDuration(), ChronoUnit.MINUTES));
+        attempt.setStartTime(startTime);
         attempt.setEndTime(submissionTime);
-        attempt.setTimeSpentMinutes(quiz.getDuration());
+        attempt.setTimeSpentMinutes((int) Duration.between(startTime, submissionTime).toMinutes());
 
         // Calculate status and feedback
         String status = score >= Math.ceil(quiz.getNumberOfQuestions() / 2.0) ? "PASSED" : "FAILED";

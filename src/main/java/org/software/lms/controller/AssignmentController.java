@@ -7,6 +7,7 @@ import org.software.lms.service.AssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class AssignmentController {
     private NotificationController notifControl;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Assignment> createAssignment(
             @PathVariable Long courseId,
             @RequestBody Assignment assignment) {
@@ -30,6 +32,7 @@ public class AssignmentController {
     }
 
     @GetMapping("/{assignmentId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<Assignment> getAssignment(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId) {
@@ -37,11 +40,13 @@ public class AssignmentController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<List<Assignment>> getCourseAssignments(@PathVariable Long courseId) {
         return ResponseEntity.ok(assignmentService.getAssignmentsByCourse(courseId));
     }
 
     @PutMapping("/{assignmentId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Assignment> updateAssignment(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId,
@@ -50,6 +55,7 @@ public class AssignmentController {
     }
 
     @DeleteMapping("/{assignmentId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Void> deleteAssignment(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId) {
@@ -60,6 +66,7 @@ public class AssignmentController {
 
 
     @PutMapping("/{assignmentId}/submissions/{submissionId}")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<Submission> updateSubmission(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId,
@@ -70,6 +77,7 @@ public class AssignmentController {
     }
 
     @DeleteMapping("/{assignmentId}/submissions/{submissionId}")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<Void> deleteSubmission(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId,
@@ -80,6 +88,7 @@ public class AssignmentController {
 
 
     @PostMapping("/{assignmentId}/submissions/{submissionId}/grade")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Submission> gradeSubmission(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId,
@@ -102,6 +111,7 @@ public class AssignmentController {
     }
 
     @GetMapping("/{assignmentId}/submissions")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<List<Submission>> getAssignmentSubmissions(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId) {
@@ -109,6 +119,7 @@ public class AssignmentController {
     }
 
     @GetMapping("/submissions/student/{studentId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<List<Submission>> getStudentSubmissions(
             @PathVariable Long courseId,
             @PathVariable Long studentId) {

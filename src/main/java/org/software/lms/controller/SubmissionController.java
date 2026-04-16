@@ -8,6 +8,8 @@ import org.software.lms.service.FileStorageService.FileResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.software.lms.service.UserService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,6 +28,9 @@ public class SubmissionController {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    @Autowired
+    private UserService userService;
 
     private static final List<String> ALLOWED_FILE_TYPES = Arrays.asList(
             "application/pdf",
@@ -56,8 +61,10 @@ public class SubmissionController {
     public ResponseEntity<SubmissionResponse> submitAssignment(
             @PathVariable Long courseId,
             @PathVariable Long assignmentId,
-            @RequestParam Long studentId,
             @RequestParam("file") MultipartFile file) {
+
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Long studentId = userService.getUserByEmail(userEmail).getId();
 
         if (!file.getContentType().equals("application/pdf") &&
                 !file.getContentType().equals("text/plain")) {

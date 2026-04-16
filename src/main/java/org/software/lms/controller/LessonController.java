@@ -57,12 +57,14 @@ public class LessonController {
 
     }
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<List<Lesson>> getLessonsByCourse(@PathVariable Long courseId) {
         List<Lesson> lessons = lessonService.getLessonsByCourse(courseId);
         return ResponseEntity.ok(lessons);
     }
 
     @GetMapping("/{lessonId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<Lesson> getLessonById(
             @PathVariable Long courseId,
             @PathVariable Long lessonId) {
@@ -71,6 +73,7 @@ public class LessonController {
     }
 
     @PutMapping("/{lessonId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Lesson> updateLesson(
             @PathVariable Long courseId,
             @PathVariable Long lessonId,
@@ -90,6 +93,7 @@ public class LessonController {
 
     // Resource management endpoints
     @PostMapping("/{lessonId}/resources")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<LessonResource> uploadResource(
             @PathVariable Long courseId,
             @PathVariable Long lessonId,
@@ -99,6 +103,7 @@ public class LessonController {
     }
 
     @GetMapping("/{lessonId}/resources")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<List<LessonResource>> getLessonResources(
             @PathVariable Long courseId,
             @PathVariable Long lessonId) {
@@ -108,6 +113,7 @@ public class LessonController {
 
 
     @GetMapping("/{lessonId}/resources/{resourceId}/view")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR', 'STUDENT')")
     public ResponseEntity<Resource> viewResource(
             @PathVariable Long courseId,
             @PathVariable Long lessonId,
@@ -139,6 +145,7 @@ public class LessonController {
         };
     }
     @DeleteMapping("/{lessonId}/resources/{resourceId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'INSTRUCTOR')")
     public ResponseEntity<Void> deleteResource(
             @PathVariable Long courseId,
             @PathVariable Long lessonId,
